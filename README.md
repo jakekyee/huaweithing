@@ -13,7 +13,7 @@ g++ -O3 .\final_submission.cpp
 
 # Results
 
-This is optimized for speed. Plan S for Speed.
+This is optimized for speed. Speeeeed. Although the algorithm does not necessarily produce an optimal result, the algorithm itself has been aggesively optimized for speed.
 
 
 For example, the final test file with over 200000+ operations runs in under 10 seconds with my algorithm, producing a valid sequence of operations.
