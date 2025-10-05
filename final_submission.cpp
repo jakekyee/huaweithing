@@ -37,7 +37,7 @@ pair<long long, vector<Node>> ingestNodes(const string &input_file) {
     string line;
     long long total_memory = 0;
     vector<Node> nodes;
-
+    // Erorr
     if (!file.is_open()) {
         cerr << "Failed to open file: " << input_file << endl;
         return {0, {}};
@@ -174,9 +174,9 @@ void remove_mem(vector<Node*> &memory, long long &current_mem,
     }
 }
 
-
+// Use memory 2 as a map to track memory, memory to track the the memory, everything else i spretty self explanityt
 // Add memory
-void add_mem(vector<Node*> &memory, long long &current_mem, long long &peak_mem, Node* nodetoadd,  // <-- NEW: added peak_mem
+void add_mem(vector<Node*> &memory, long long &current_mem, long long &peak_mem, Node* nodetoadd,  
              const unordered_map<long long, Node*> &id_to_node,
              long long max_mem, unordered_set<long long> &safe_nodes,
              vector<Node> &run_order, unordered_set<long long> &memory2,
@@ -197,13 +197,16 @@ void add_mem(vector<Node*> &memory, long long &current_mem, long long &peak_mem,
             }
         }
     }
+    
+
+    // Check memory stuff
     current_mem += nodetoadd->runmem;
 
     if (current_mem + nodetoadd->runmem > max_mem) {
         remove_mem(memory, current_mem, safe_nodes, max_mem, memory2, id_to_node, sorted_nodes, current_idx);
     }
 
-    if (current_mem > peak_mem) peak_mem = current_mem;  // <-- NEW
+    if (current_mem > peak_mem) peak_mem = current_mem; 
 
     memory.push_back(nodetoadd);
     memory2.insert(nodetoadd->number);
@@ -216,7 +219,7 @@ void add_mem(vector<Node*> &memory, long long &current_mem, long long &peak_mem,
     if (current_mem > max_mem) {
         remove_mem(memory, current_mem, safe_nodes, max_mem, memory2, id_to_node, sorted_nodes, current_idx);
     }
-    if (current_mem > peak_mem) peak_mem = current_mem;  // <-- NEW
+    if (current_mem > peak_mem) peak_mem = current_mem; 
 
     for (long long id : added_safes) safe_nodes.erase(id);
 }
@@ -228,9 +231,9 @@ vector<Node> ExecuteOrder(const vector<Node> &all_nodes, const std::string &outp
 
     long long max_mem = total_memory;
     long long current_mem = 0;
-    long long peak_mem = 0;  // <-- NEW
+    long long peak_mem = 0; 
     long long timecount = 0;
-
+    // Toposort
     vector<Node> sorted_nodes = topoSort(all_nodes);
 
     unordered_map<long long, Node*> id_to_node;
@@ -240,13 +243,17 @@ vector<Node> ExecuteOrder(const vector<Node> &all_nodes, const std::string &outp
     unordered_set<long long> memory2;
     vector<Node> run_order;
 
-    cout << "Topologically sorted nodes:\n";
+    // cout << "Topologically sorted nodes:\n";
+    // For each node in order
     for (size_t idx = 0; idx < sorted_nodes.size(); ++idx) {
         auto &node = sorted_nodes[idx];
         unordered_set<long long> safe_nodes;
+        // Add the node
         add_mem(memory, current_mem, peak_mem, &node, id_to_node, max_mem, safe_nodes, run_order, memory2, timecount, sorted_nodes, (long long)idx);
     }
 
+
+    // Print the results
     cout << "Total cost: " << timecount << "\n";
     cout << "Peak memory usage: " << peak_mem << " units\n";  // <-- NEW
     int count = 0;
