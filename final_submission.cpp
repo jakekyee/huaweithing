@@ -266,8 +266,8 @@ vector<Node> ExecuteOrder(const vector<Node> &all_nodes, const std::string &outp
 
 // Main
 int main(int argc, char* argv[]) {
-    std::string input_file = "test_out/example7.txt"; // replace with your file
-    // std::string input_file = argv[1]; // Get file from command line
+    // std::string input_file = "test_out/example7.txt"; // replace with your file
+    std::string input_file = argv[1]; // Get file from command line
     auto [max_mem, nodes] = ingestNodes(input_file);
 
     ExecuteOrder(nodes, input_file, max_mem);
