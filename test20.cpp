@@ -123,9 +123,12 @@ void remove_mem(vector<Node*> &memory, long long &current_mem,
                 const unordered_set<long long> &safe_nodes,
                 long long max_mem, unordered_set<long long> &memory2,
                 const unordered_map<long long, Node*> &id_to_node,
-                const vector<Node> &sorted_nodes, long long current_idx)
+                const vector<Node> &sorted_nodes, long long current_idx);
 {
-    const int LOOKAHEAD = 10;
+
+    //Hardcoded for speed
+    // Could not do it if I wanted to
+    const int LOOKAHEAD = 100;
     unordered_set<long long> future_needed;
 
     for (int i = current_idx; i < min((size_t)(current_idx + LOOKAHEAD), sorted_nodes.size()); i++) {
@@ -254,7 +257,7 @@ vector<Node> ExecuteOrder(const vector<Node> &all_nodes, const std::string &outp
 
 // Main
 int main() {
-    std::string input_file = "test_out/example1.txt"; // replace with your file
+    std::string input_file = "test_out/example5.txt"; // replace with your file
     auto [max_mem, nodes] = ingestNodes(input_file);
 
     ExecuteOrder(nodes, input_file, max_mem);
