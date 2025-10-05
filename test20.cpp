@@ -2,6 +2,7 @@
 #include <chrono>
 using namespace std;
 
+// Node structure
 struct Node {
     long long number;
     string name;
@@ -11,12 +12,12 @@ struct Node {
     long long timecost;
 
     Node(long long num = 0, const string &n = "", const vector<long long> &inp = {},
-        long long run = 0, long long out = 0, long long time = 0)
+         long long run = 0, long long out = 0, long long time = 0)
         : number(num), name(n), inputs(inp), runmem(run), outputmem(out), timecost(time) {}
 };
 
 
-
+//Quick test for debugging
 void printNodes(long long total_memory, const vector<Node>& nodes) {
     cout << "MemoryLimit: " << total_memory << endl;
     for (const auto& node : nodes) {
@@ -30,8 +31,7 @@ void printNodes(long long total_memory, const vector<Node>& nodes) {
 }
 
 
-
-// --------------------------- File ingestion ---------------------------
+// Ingest the files
 pair<long long, vector<Node>> ingestNodes(const string &input_file) {
     ifstream file(input_file);
     string line;
@@ -77,17 +77,16 @@ pair<long long, vector<Node>> ingestNodes(const string &input_file) {
 }
 
 
-
-// --------------------------- Topological sort ---------------------------
+// Toposort
 vector<Node> topoSort(const vector<Node> &nodes) {
     unordered_map<long long, long long> indeg;
     unordered_map<long long, vector<long long>> adj;
-    unordered_map<long long, Node> id_to_node;  // map from ID to Node
+    unordered_map<long long, Node> id_to_node;
     unordered_set<long long> all_ids;
 
     for (const auto &n : nodes) {
         all_ids.insert(n.number);
-        id_to_node[n.number] = n;  // store the Node
+        id_to_node[n.number] = n;
         if (!indeg.count(n.number)) indeg[n.number] = 0;
     }
 
@@ -106,7 +105,7 @@ vector<Node> topoSort(const vector<Node> &nodes) {
     vector<Node> order;
     while (!q.empty()) {
         long long u = q.front(); q.pop();
-        order.push_back(id_to_node[u]);  // push the actual Node
+        order.push_back(id_to_node[u]);
         for (long long v : adj[u])
             if (--indeg[v] == 0)
                 q.push(v);
@@ -119,18 +118,16 @@ vector<Node> topoSort(const vector<Node> &nodes) {
 }
 
 
-// USE LRU AND LOOKAHEAD 'CAUSE I"M GENIUS  
+// Remove memory
 void remove_mem(vector<Node*> &memory, long long &current_mem,
                 const unordered_set<long long> &safe_nodes,
                 long long max_mem, unordered_set<long long> &memory2,
                 const unordered_map<long long, Node*> &id_to_node,
-                const vector<Node> &sorted_nodes, long long current_idx) 
+                const vector<Node> &sorted_nodes, long long current_idx)
 {
-    // Build set of nodes that will be needed in the near future (next K nodes)
-    const int LOOKAHEAD = 10; // Adjust this value as needed
+    const int LOOKAHEAD = 10;
     unordered_set<long long> future_needed;
-    
-    // Add nodes that will be executed in the next LOOKAHEAD steps
+
     for (int i = current_idx; i < min((size_t)(current_idx + LOOKAHEAD), sorted_nodes.size()); i++) {
         const Node& future_node = sorted_nodes[i];
         for (long long inp : future_node.inputs) {
@@ -138,26 +135,21 @@ void remove_mem(vector<Node*> &memory, long long &current_mem,
         }
     }
 
-    // Iterate from oldest to newest (LRU) but avoid removing future-needed nodes
     int i = 0;
-    while (current_mem > max_mem && i < memory.size()) {
+    while (current_mem > max_mem && i < (int)memory.size()) {
         Node* n = memory[i];
-        // Don't remove if it's safe OR if it's needed in the near future
         if (!safe_nodes.count(n->number) && !future_needed.count(n->number)) {
             current_mem -= n->outputmem;
             memory2.erase(n->number);
             memory[i] = memory.back();
             memory.pop_back();
-            // Don't increment i since we swapped a new element into position i
         } else {
-            // Only increment if we didn't remove the current element
             ++i;
         }
     }
-    
-    // If we still need memory and have to remove future-needed nodes, do it reluctantly
+
     i = 0;
-    while (current_mem > max_mem && i < memory.size()) {
+    while (current_mem > max_mem && i < (int)memory.size()) {
         Node* n = memory[i];
         if (!safe_nodes.count(n->number)) {
             current_mem -= n->outputmem;
@@ -170,11 +162,13 @@ void remove_mem(vector<Node*> &memory, long long &current_mem,
     }
 }
 
-void add_mem(vector<Node*> &memory, long long &current_mem, Node* nodetoadd,
+
+// Add memory
+void add_mem(vector<Node*> &memory, long long &current_mem, long long &peak_mem, Node* nodetoadd,  // <-- NEW: added peak_mem
              const unordered_map<long long, Node*> &id_to_node,
              long long max_mem, unordered_set<long long> &safe_nodes,
-             vector<Node*> &run_order, unordered_set<long long> &memory2,
-             long long &timecount, const vector<Node> &sorted_nodes, long long current_idx)  // Added parameters
+             vector<Node> &run_order, unordered_set<long long> &memory2,
+             long long &timecount, const vector<Node> &sorted_nodes, long long current_idx)
 {
     vector<long long> added_safes;
 
@@ -187,83 +181,82 @@ void add_mem(vector<Node*> &memory, long long &current_mem, Node* nodetoadd,
         if (!memory2.count(inp_id)) {
             auto it = id_to_node.find(inp_id);
             if (it != id_to_node.end()) {
-                add_mem(memory, current_mem, it->second, id_to_node, max_mem, safe_nodes, run_order, memory2, timecount, sorted_nodes, current_idx);
+                add_mem(memory, current_mem, peak_mem, it->second, id_to_node, max_mem, safe_nodes, run_order, memory2, timecount, sorted_nodes, current_idx);
             }
         }
     }
-
+    current_mem += nodetoadd->runmem;
 
     if (current_mem + nodetoadd->runmem > max_mem) {
         remove_mem(memory, current_mem, safe_nodes, max_mem, memory2, id_to_node, sorted_nodes, current_idx);
     }
 
-    current_mem += nodetoadd->runmem;
+    if (current_mem > peak_mem) peak_mem = current_mem;  // <-- NEW
+
     memory.push_back(nodetoadd);
     memory2.insert(nodetoadd->number);
     timecount += nodetoadd->timecost;
-    run_order.push_back(nodetoadd);
+    run_order.push_back(*nodetoadd);
 
     current_mem -= nodetoadd->runmem;
     current_mem += nodetoadd->outputmem;
 
-
     if (current_mem > max_mem) {
         remove_mem(memory, current_mem, safe_nodes, max_mem, memory2, id_to_node, sorted_nodes, current_idx);
     }
-
-
+    if (current_mem > peak_mem) peak_mem = current_mem;  // <-- NEW
 
     for (long long id : added_safes) safe_nodes.erase(id);
 }
 
-// --------------------------- Main ---------------------------
-int main() {
+
+// Execute order
+vector<Node> ExecuteOrder(const vector<Node> &all_nodes, const std::string &output_name, long long total_memory) {
     auto start = std::chrono::high_resolution_clock::now();
-    // std::string input_file = "test_out/example5.txt";     // replace with your file
-    // std::string input_file = "test_out/example1.txt"; // replace with your file
-    // std::string input_file = "test_out/example2.txt"; // replace with your file
-    // std::string input_file = "test_out/example3.txt"; // replace with your file
-    // std::string input_file = "diytest_out/example5.txt"; // replace with your file
-    // std::string input_file = "diytest_out/diytest2.txt"; // replace with your file
-    // std::string input_file = "test_out/example5.txt"; // replace with your file
-    // std::string input_file = "diytest_out/diytest1.txt"; // replace with your file
-    std::string input_file = "test_out/example6.txt"; // replace with your file
-    auto [max_mem, nodes] = ingestNodes(input_file);
 
+    long long max_mem = total_memory;
     long long current_mem = 0;
+    long long peak_mem = 0;  // <-- NEW
     long long timecount = 0;
-    
-    // Topologically sort the nodes
-    vector<Node> sorted_nodes = topoSort(nodes);
 
-    // Convert nodes to pointers for faster memory management
+    vector<Node> sorted_nodes = topoSort(all_nodes);
+
     unordered_map<long long, Node*> id_to_node;
     for (auto &n : sorted_nodes) id_to_node[n.number] = &n;
 
     vector<Node*> memory;
-    unordered_set<long long> memory2;  // tracks node IDs in memory
-    vector<Node*> run_order;
+    unordered_set<long long> memory2;
+    vector<Node> run_order;
 
     cout << "Topologically sorted nodes:\n";
-    for (long long idx = 0; idx < sorted_nodes.size(); ++idx) {  // Use index loop
+    for (size_t idx = 0; idx < sorted_nodes.size(); ++idx) {
         auto &node = sorted_nodes[idx];
         unordered_set<long long> safe_nodes;
-        add_mem(memory, current_mem, &node, id_to_node, max_mem, safe_nodes, run_order, memory2, timecount, sorted_nodes, idx);
+        add_mem(memory, current_mem, peak_mem, &node, id_to_node, max_mem, safe_nodes, run_order, memory2, timecount, sorted_nodes, (long long)idx);
     }
+
     cout << "Total cost: " << timecount << "\n";
+    cout << "Peak memory usage: " << peak_mem << " units\n";  // <-- NEW
     int count = 0;
     for (const auto &node : run_order) {
-            count = count + 1;
-            // timecount = timecount + node.timecost;
-            // cout << "O Ran node " << node->number << " (" << node->name << ") timecount :" << timecount << "\n";
-        }
+        count++;
+        // cout << "O Ran node " << node.number << " (" << node.name << ")"  << "\n";
+    }
     cout << "Count : " << count << " count" << endl;
 
     auto end = std::chrono::high_resolution_clock::now();
     auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
     cout << "Time taken: " << duration.count() << " microseconds" << endl;
 
+    return run_order;
+}
 
-    // printNodes(max_mem, nodes);
+
+// Main
+int main() {
+    std::string input_file = "test_out/example1.txt"; // replace with your file
+    auto [max_mem, nodes] = ingestNodes(input_file);
+
+    ExecuteOrder(nodes, input_file, max_mem);
     return 0;
 }

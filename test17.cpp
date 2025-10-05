@@ -217,7 +217,7 @@ void add_mem(vector<Node*> &memory, long long &current_mem, Node* nodetoadd,
 }
 
 // --------------------------- Main ---------------------------
-int main() {
+int ExecuteOrder(std::vector<Node> &all_nodes, const std::string &output_name, long total_memory) {
     auto start = std::chrono::high_resolution_clock::now();
     // std::string input_file = "test_out/example5.txt";     // replace with your file
     // std::string input_file = "test_out/example1.txt"; // replace with your file
@@ -227,9 +227,14 @@ int main() {
     // std::string input_file = "diytest_out/diytest2.txt"; // replace with your file
     // std::string input_file = "test_out/example5.txt"; // replace with your file
     // std::string input_file = "diytest_out/diytest1.txt"; // replace with your file
-    std::string input_file = "test_out/example6.txt"; // replace with your file
+
+
+    std::string input_file = "test_out/example5.txt"; // replace with your file
+
+    // std::vector<Node> nodes = all_nodes;
     auto [max_mem, nodes] = ingestNodes(input_file);
 
+    // long long max_mem = total_memory;
     long long current_mem = 0;
     long long timecount = 0;
     
@@ -265,5 +270,12 @@ int main() {
 
 
     // printNodes(max_mem, nodes);
+    return 0;
+}
+int main() {
+
+    std::string input_file = "test_out/example6.txt"; // replace with your file
+    auto [max_mem, nodes] = ingestNodes(input_file);
+    ExecuteOrder(nodes, input_file, max_mem);
     return 0;
 }

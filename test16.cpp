@@ -118,57 +118,57 @@ vector<Node> topoSort(const vector<Node> &nodes) {
     return order;
 }
 
+void remove_mem(vector<Node*> &memory, long long &current_mem, const unordered_set<long long> &safe_nodes,
+                long long max_mem, unordered_set<long long> &memory2, const unordered_map<long long, Node*> &id_to_node,
+                const vector<Node> &sorted_nodes, long long current_idx) {
 
-// USE LRU AND LOOKAHEAD 'CAUSE I"M GENIUS  
-void remove_mem(vector<Node*> &memory, long long &current_mem,
-                const unordered_set<long long> &safe_nodes,
-                long long max_mem, unordered_set<long long> &memory2,
-                const unordered_map<long long, Node*> &id_to_node,
-                const vector<Node> &sorted_nodes, long long current_idx) 
-{
-    // Build set of nodes that will be needed in the near future (next K nodes)
-    const int LOOKAHEAD = 10; // Adjust this value as needed
-    unordered_set<long long> future_needed;
-    
-    // Add nodes that will be executed in the next LOOKAHEAD steps
-    for (int i = current_idx; i < min((size_t)(current_idx + LOOKAHEAD), sorted_nodes.size()); i++) {
-        const Node& future_node = sorted_nodes[i];
-        for (long long inp : future_node.inputs) {
-            future_needed.insert(inp);
-        }
-    }
+    const int TIER1 = 15;  // immediate lookahead
+    const int TIER2 = 20; // extended lookahead
 
-    // Iterate from oldest to newest (LRU) but avoid removing future-needed nodes
+    unordered_set<long long> tier1_needed, tier2_needed;
+
+    // Tier 1: immediate next TIER1 nodes
+    for (int i = current_idx; i < min((size_t)(current_idx + TIER1), sorted_nodes.size()); ++i)
+        for (long long inp : sorted_nodes[i].inputs) tier1_needed.insert(inp);
+
+    // Tier 2: next TIER2 nodes
+    for (int i = current_idx; i < min((size_t)(current_idx + TIER2), sorted_nodes.size()); ++i)
+        for (long long inp : sorted_nodes[i].inputs) tier2_needed.insert(inp);
+
+    // Step 1: remove nodes NOT in tier1_needed
     int i = 0;
     while (current_mem > max_mem && i < memory.size()) {
         Node* n = memory[i];
-        // Don't remove if it's safe OR if it's needed in the near future
-        if (!safe_nodes.count(n->number) && !future_needed.count(n->number)) {
+        if (!safe_nodes.count(n->number) && !tier1_needed.count(n->number)) {
             current_mem -= n->outputmem;
             memory2.erase(n->number);
-            memory[i] = memory.back();
-            memory.pop_back();
-            // Don't increment i since we swapped a new element into position i
-        } else {
-            // Only increment if we didn't remove the current element
-            ++i;
-        }
+            memory[i] = memory.back(); memory.pop_back();
+        } else ++i;
     }
-    
-    // If we still need memory and have to remove future-needed nodes, do it reluctantly
+
+    // Step 2: remove nodes NOT in tier2_needed
+    i = 0;
+    while (current_mem > max_mem && i < memory.size()) {
+        Node* n = memory[i];
+        if (!safe_nodes.count(n->number) && !tier2_needed.count(n->number)) {
+            current_mem -= n->outputmem;
+            memory2.erase(n->number);
+            memory[i] = memory.back(); memory.pop_back();
+        } else ++i;
+    }
+
+    // Step 3: reluctantly remove any remaining non-safe nodes
     i = 0;
     while (current_mem > max_mem && i < memory.size()) {
         Node* n = memory[i];
         if (!safe_nodes.count(n->number)) {
             current_mem -= n->outputmem;
             memory2.erase(n->number);
-            memory[i] = memory.back();
-            memory.pop_back();
-        } else {
-            ++i;
-        }
+            memory[i] = memory.back(); memory.pop_back();
+        } else ++i;
     }
 }
+
 
 void add_mem(vector<Node*> &memory, long long &current_mem, Node* nodetoadd,
              const unordered_map<long long, Node*> &id_to_node,
@@ -222,17 +222,17 @@ int main() {
     // std::string input_file = "test_out/example5.txt";     // replace with your file
     // std::string input_file = "test_out/example1.txt"; // replace with your file
     // std::string input_file = "test_out/example2.txt"; // replace with your file
-    // std::string input_file = "test_out/example3.txt"; // replace with your file
+    std::string input_file = "test_out/example3.txt"; // replace with your file
     // std::string input_file = "diytest_out/example5.txt"; // replace with your file
     // std::string input_file = "diytest_out/diytest2.txt"; // replace with your file
     // std::string input_file = "test_out/example5.txt"; // replace with your file
     // std::string input_file = "diytest_out/diytest1.txt"; // replace with your file
-    std::string input_file = "test_out/example6.txt"; // replace with your file
+    // std::string input_file = "test_out/example7.txt"; // replace with your file
     auto [max_mem, nodes] = ingestNodes(input_file);
 
     long long current_mem = 0;
     long long timecount = 0;
-    
+
     // Topologically sort the nodes
     vector<Node> sorted_nodes = topoSort(nodes);
 
@@ -255,7 +255,7 @@ int main() {
     for (const auto &node : run_order) {
             count = count + 1;
             // timecount = timecount + node.timecost;
-            // cout << "O Ran node " << node->number << " (" << node->name << ") timecount :" << timecount << "\n";
+            cout << "O Ran node " << node->number << " (" << node->name << ") timecount :" << timecount << "\n";
         }
     cout << "Count : " << count << " count" << endl;
 
