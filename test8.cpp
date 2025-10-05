@@ -1,4 +1,5 @@
     #include <bits/stdc++.h>
+    #include <chrono>
     using namespace std;
 
     struct Node {
@@ -123,7 +124,7 @@
     //     }
     // }
 
-    // // Pass in memory, currentmem, safe nodes, max_mem - NEWEST to OLDEST
+    // Pass in memory, currentmem, safe nodes, max_mem - NEWEST to OLDEST
     // void remove_mem(vector<Node> &memory, long long &current_mem, const unordered_set<long long> &safe_nodes, long long max_mem) {
     //     auto it = memory.rbegin(); // reverse iterator starting from the end
     //     while (current_mem > max_mem && it != memory.rend()) {
@@ -138,11 +139,9 @@
     //     }
     // }
 
-
-
-    // Greedy removal: remove nodes with largest outputmem first (excluding safe_nodes)
+// Greedy removal: remove nodes with largest outputmem first (excluding safe_nodes)
     void remove_mem(vector<Node> &memory, long long &current_mem,
-                    const unordered_set<long long> &safe_nodes, long long max_mem) 
+                    const unordered_set<long long> &safe_nodes, long long max_mem, unordered_set<long long> &memory2) 
     {
         // Collect removable nodes (not safe)
         vector<Node*> removable;
@@ -168,6 +167,7 @@
 
             if (it != memory.end()) {
                 current_mem -= it->outputmem;
+                memory2.erase(it->number);
                 memory.erase(it);
             }
         }
@@ -194,53 +194,114 @@
     // }
 
     // Add a node and its inputs to memory, recursively if needed
-    void add_mem(vector<Node> &memory, long long &current_mem, const Node &nodetoadd,
-                const unordered_map<long long, Node> &id_to_node, long long max_mem,
-                vector<Node> &run_order, unordered_set<long long> safe_nodes = {})
-    {
-        // Add this node's inputs to the safe set
-        for (long long inp_id : nodetoadd.inputs) {
+    // void add_mem(vector<Node> &memory, long long &current_mem, const Node &nodetoadd,
+    //             const unordered_map<long long, Node> &id_to_node, long long max_mem,
+    //              unordered_set<long long> &safe_nodes, vector<Node> &run_order)
+    // {
+    //     // Add this node's inputs to the safe set
+    //     for (long long inp_id : nodetoadd.inputs) {
+    //         // safe_nodes.insert(inp_id);
+    //         safe_nodes.insert(inp_id);
+
+    //         // If input not in memory, add it first
+    //         auto it = find_if(memory.begin(), memory.end(), [&](const Node &n){ return n.number == inp_id; });
+    //         if (it == memory.end()) {
+    //             auto node_it = id_to_node.find(inp_id);
+    //             if (node_it != id_to_node.end()) {
+    //                 add_mem(memory, current_mem, node_it->second, id_to_node, max_mem, safe_nodes, run_order);
+    //             } else {
+    //                 cerr << "Error: input node " << inp_id << " not found in DAG!\n";
+    //             }
+    //         }
+    //     }
+
+    //     // Ensure there is enough memory for running node
+    //     if (current_mem + nodetoadd.runmem > max_mem) {
+    //         remove_mem(memory, current_mem, safe_nodes, max_mem);
+    //     }
+
+    //     // Add node running memory
+    //     // cout << nodetoadd.name << " :\n";
+
+    //     current_mem += nodetoadd.runmem;
+    //     memory.push_back(nodetoadd);
+    //     run_order.push_back(nodetoadd);
+
+    //     // After running, convert running memory to output memory
+    //     current_mem -= nodetoadd.runmem;
+    //     current_mem += nodetoadd.outputmem;
+
+    //     // Remove extra memory if over limit
+    //     if (current_mem > max_mem) {
+    //         remove_mem(memory, current_mem, safe_nodes, max_mem);
+    //     }
+    // }
+
+
+
+void add_mem(vector<Node> &memory, long long &current_mem, const Node &nodetoadd,
+             const unordered_map<long long, Node> &id_to_node, long long max_mem,
+             unordered_set<long long> &safe_nodes, vector<Node> &run_order, unordered_set<long long> &memory2)
+{
+    vector<long long> added_safes; // track which nodes we add as safe
+
+    // Mark inputs as safe and recursively add if not in memory
+    for (long long inp_id : nodetoadd.inputs) {
+        if (!safe_nodes.count(inp_id)) { 
             safe_nodes.insert(inp_id);
+            added_safes.push_back(inp_id);
+        }
 
-            // If input not in memory, add it first
-            auto it = find_if(memory.begin(), memory.end(), [&](const Node &n){ return n.number == inp_id; });
-            if (it == memory.end()) {
-                auto node_it = id_to_node.find(inp_id);
-                if (node_it != id_to_node.end()) {
-                    add_mem(memory, current_mem, node_it->second, id_to_node, max_mem, run_order, safe_nodes);
-                } else {
-                    cerr << "Error: input node " << inp_id << " not found in DAG!\n";
-                }
+        // Only add if input is not already in memory
+        if (!memory2.count(inp_id)) {
+            auto node_it = id_to_node.find(inp_id);
+            if (node_it != id_to_node.end()) {
+                add_mem(memory, current_mem, node_it->second, id_to_node, max_mem, safe_nodes, run_order, memory2);
+            } else {
+                cerr << "Error: input node " << inp_id << " not found in DAG!\n";
             }
-        }
-
-        // Ensure there is enough memory for running node
-        if (current_mem + nodetoadd.runmem > max_mem) {
-            remove_mem(memory, current_mem, safe_nodes, max_mem);
-        }
-
-        // Add node running memory
-        // cout << nodetoadd.name << " :\n";
-
-        current_mem += nodetoadd.runmem;
-        memory.push_back(nodetoadd);
-        run_order.push_back(nodetoadd);
-
-        // After running, convert running memory to output memory
-        current_mem -= nodetoadd.runmem;
-        current_mem += nodetoadd.outputmem;
-
-        // Remove extra memory if over limit
-        if (current_mem > max_mem) {
-            remove_mem(memory, current_mem, safe_nodes, max_mem);
         }
     }
 
+    // Ensure enough memory
+    if (current_mem + nodetoadd.runmem > max_mem) {
+        remove_mem(memory, current_mem, safe_nodes, max_mem, memory2);
+    }
+
+    // Simulate running node
+    current_mem += nodetoadd.runmem;
+    memory.push_back(nodetoadd);
+    memory2.insert(nodetoadd.number);
+    run_order.push_back(nodetoadd);
+
+    // Convert runmem → outputmem
+    current_mem -= nodetoadd.runmem;
+    current_mem += nodetoadd.outputmem;
+
+    // Clean up extra memory if still over limit
+    if (current_mem > max_mem) {
+        remove_mem(memory, current_mem, safe_nodes, max_mem, memory2);
+    }
+
+    // Restore safe_nodes
+    for (long long id : added_safes) {
+        safe_nodes.erase(id);
+    }
+}
+
+
+
+
+
     // --------------------------- Main ---------------------------
     int main() {
-        std::string input_file = "test_out/example1.txt";     // replace with your file
-        // std::string input_file = "test_out/example2.txt"; // replace with your file
+        auto start = std::chrono::high_resolution_clock::now();
+
+        // std::string input_file = "test_out/example5.txt";     // replace with your file
+        std::string input_file = "test_out/example2.txt"; // replace with your file
         // std::string input_file = "test_out/example3.txt"; // replace with your file
+        // std::string input_file = "diytest_out/example5.txt"; // replace with your file
+        // std::string input_file = "diytest_out/diytest2.txt"; // replace with your file
         // std::string input_file = "test_out/example4.txt"; // replace with your file
         // std::string input_file = "diytest_out/diytest1.txt"; // replace with your file
         // std::string input_file = "test_out/example7.txt"; // replace with your file
@@ -249,15 +310,18 @@
         
         vector<Node> sorted_nodes = topoSort(nodes);
         vector<Node> memory;
+        // unordered_map<long long, Node> memory2;
+        unordered_set<long long> memory2;
+
         vector<Node> run_order;
         cout << "Topologically sorted nodes:\n";
         unordered_map<long long, Node> id_to_node;
         for (const auto &n : sorted_nodes) id_to_node[n.number] = n;
 
         for (const auto &node : sorted_nodes) {
-            // vector<Node> tempsafe;
+            unordered_set<long long> safe_nodes;
 
-            add_mem(memory, current_mem, node, id_to_node, max_mem, run_order);
+            add_mem(memory, current_mem, node, id_to_node, max_mem, safe_nodes, run_order, memory2);
             // cout << "sdlfjlaksfjd" << "\n";
             // cout << "X Ran node " << node.number << " (" << node.name << "), current memory: " << current_mem << "\n";
         }    
@@ -268,6 +332,9 @@
             cout << "O Ran node " << node.number << " (" << node.name << ") timecount :" << timecount << "\n";
         }
         cout << "TOtal cost " << timecount << "\n";
+        auto end = std::chrono::high_resolution_clock::now();
+        auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
 
+        std::cout << "Time taken: " << duration.count() << " microseconds" << std::endl;
         return 0;
     }

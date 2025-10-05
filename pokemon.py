@@ -43,6 +43,6 @@ def sum_last_numbers(filename):
 
 
 
-result = sum_last_numbers('test_out\example1.txt')
+result = sum_last_numbers('test_out\example5.txt')
 # result = sum_last_numbers('diytest_out\diytest1.txt')
 print(result)
