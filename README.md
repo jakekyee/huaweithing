@@ -1,6 +1,6 @@
 # Huawei Research Challenge #2 - Automatic Decision for Re-computation (Ai Compilers)
 
-## This challenge as now been resolved. I placed #3 out of 778 participants as the highest ranked solo participant. Thank you to Huawei for making this possible!
+## This challenge as now been resolved. I placed 3rd out of 778 participants as the highest ranked solo participant. Thank you to Huawei for making this possible!
 
 <img width="1213" height="313" alt="image" src="https://github.com/user-attachments/assets/74e4bc0b-ba59-4074-be2a-aa63e007992b" />
 
