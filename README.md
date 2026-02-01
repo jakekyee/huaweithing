@@ -54,7 +54,7 @@ g++ -O3 .\final_submission.cpp
 This is optimized for speed. Although the algorithm does not necessarily produce an optimal result, the algorithm itself has been aggesively optimized for speed.
 
 
-For example, the final test file with over 200000+ operations runs in under 10 seconds with my algorithm, producing a valid sequence of operations.
+For example, the final test file with over 200000+ operations runs in under 100 seconds with my algorithm, producing a valid sequence of operations.
 
 ```
 PS C:\Users\jy\Desktop\school\huaweithing\huaweithing> .\a.exe .\test_out\example7.txt
@@ -62,6 +62,6 @@ Topologically sorted nodes:
 Total cost: 1788851676
 Peak memory usage: 42949672960 units
 Count : 3596351 count
-Time taken: 7 seconds
+Time taken: 89 seconds
 ```
 
